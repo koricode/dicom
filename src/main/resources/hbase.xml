@@ -1,0 +1,14 @@
+<configuration>
+    <property>
+        <name>hbase.zookeeper.quorum</name>
+        <value>192.168.25.28</value>
+    </property>
+    <property>
+        <name>hbase.zookeeper.property.clientPort</name>
+        <value>2181</value>
+    </property>
+    <property>
+        <name>hbase.client.keyvalue.maxsize</name>
+        <value>0</value>
+    </property>
+</configuration>
