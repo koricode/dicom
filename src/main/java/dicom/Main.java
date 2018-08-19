@@ -210,6 +210,7 @@ public class Main {
                     JsonInputHandler dicomHandler = new JsonInputHandler(jsonGenerator);
 
                     try (DicomInputStream is = new DicomInputStream(new ByteArrayInputStream(dataBytes))) {
+                        is.setIncludeBulkData(DicomInputStream.IncludeBulkData.NO);
                         is.setDicomInputHandler(dicomHandler);
                         is.readDataset(-1, -1);
                     }
