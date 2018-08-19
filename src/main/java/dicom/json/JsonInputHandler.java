@@ -24,6 +24,10 @@ public class JsonInputHandler implements DicomInputHandler {
 
     private String sopInstanceUid = null;
 
+    private boolean patientIdReady = false;
+
+    private String patientId = null;
+
     public JsonInputHandler(JsonGenerator jsonGenerator) {
 
         this(jsonGenerator, false);
@@ -40,6 +44,11 @@ public class JsonInputHandler implements DicomInputHandler {
         return sopInstanceUidReady ? sopInstanceUid : null;
     }
 
+    public String getPatientId() {
+
+        return patientIdReady ? patientId : null;
+    }
+
     @Override
     public void readValue(DicomInputStream dis, Attributes attrs) throws IOException {
 
@@ -52,9 +61,9 @@ public class JsonInputHandler implements DicomInputHandler {
         } else if (dis.isExcludeBulkData()) {
             dis.readValue(dis, attrs);
         } else {
-            if (vr == VR.SQ || len == -1) {
-                String htag = TagUtils.toHexString(tag);
+            String htag = 't' + TagUtils.toHexString(tag);
 
+            if (vr == VR.SQ || len == -1) {
                 jsonGenerator.writeStartArray(htag);
                 dis.readValue(dis, attrs);
                 jsonGenerator.writeEnd();
@@ -71,7 +80,7 @@ public class JsonInputHandler implements DicomInputHandler {
                     writeValue(tag, vr, b, dis.bigEndian(), attrs.getSpecificCharacterSet(vr), false);
                 }
             } else {
-                jsonGenerator.writeNull(TagUtils.toHexString(tag));
+                jsonGenerator.writeNull(htag);
             }
         }
     }
@@ -125,7 +134,7 @@ public class JsonInputHandler implements DicomInputHandler {
 
     private void writeStringValues(int tag, VR vr, Object val, boolean bigEndian, SpecificCharacterSet cs) {
 
-        String htag = TagUtils.toHexString(tag);
+        String htag = 't' + TagUtils.toHexString(tag);
         Object o = vr.toStrings(val, bigEndian, cs);
 
         if (o instanceof String[]) {
@@ -158,12 +167,21 @@ public class JsonInputHandler implements DicomInputHandler {
                     default:
                         jsonGenerator.write(s);
 
-                        if (tag == 131075) {
-                            if (sopInstanceUid == null) {
-                                sopInstanceUid = s;
-                            } else {
-                                sopInstanceUid = sopInstanceUid + ';' + s;
-                            }
+                        switch (tag) {
+                            case 524312:
+                                if (sopInstanceUid == null) {
+                                    sopInstanceUid = s;
+                                } else {
+                                    sopInstanceUid = sopInstanceUid + ';' + s;
+                                }
+                                break;
+                            case 1048608:
+                                if (patientId == null) {
+                                    patientId = s;
+                                } else {
+                                    patientId = patientId + ';' + s;
+                                }
+                                break;
                         }
                 }
             }
@@ -197,8 +215,13 @@ public class JsonInputHandler implements DicomInputHandler {
                 default:
                     jsonGenerator.write(htag, s);
 
-                    if (tag == 131075) {
-                        sopInstanceUid = s;
+                    switch (tag) {
+                        case 524312:
+                            sopInstanceUid = s;
+                            break;
+                        case 1048608:
+                            patientId = s;
+                            break;
                     }
             }
         }
@@ -206,7 +229,7 @@ public class JsonInputHandler implements DicomInputHandler {
 
     private void writeDoubleValues(int tag, VR vr, Object val, boolean bigEndian) {
 
-        String htag = TagUtils.toHexString(tag);
+        String htag = 't' + TagUtils.toHexString(tag);
 
         int vm = vr.vmOf(val);
         switch (vm) {
@@ -229,7 +252,7 @@ public class JsonInputHandler implements DicomInputHandler {
 
     private void writeIntValues(int tag, VR vr, Object val, boolean bigEndian) {
 
-        String htag = TagUtils.toHexString(tag);
+        String htag = 't' + TagUtils.toHexString(tag);
 
         int vm = vr.vmOf(val);
         switch (vm) {
@@ -252,7 +275,7 @@ public class JsonInputHandler implements DicomInputHandler {
 
     private void writeUIntValues(int tag, VR vr, Object val, boolean bigEndian) {
 
-        String htag = TagUtils.toHexString(tag);
+        String htag = 't' + TagUtils.toHexString(tag);
 
         int vm = vr.vmOf(val);
         switch (vm) {
@@ -276,7 +299,7 @@ public class JsonInputHandler implements DicomInputHandler {
     private void writeBulkData(int tag, BulkData blkdata) {
 
         if (includeBinary) {
-            String htag = TagUtils.toHexString(tag);
+            String htag = 't' + TagUtils.toHexString(tag);
 
             jsonGenerator.write(htag, blkdata.getURI());
         }
@@ -285,7 +308,7 @@ public class JsonInputHandler implements DicomInputHandler {
     private void writeInlineBinary(int tag, VR vr, byte[] b, boolean bigEndian, boolean preserve) {
 
         if (includeBinary) {
-            String htag = TagUtils.toHexString(tag);
+            String htag = 't' + TagUtils.toHexString(tag);
 
             if (bigEndian) {
                 b = vr.toggleEndian(b, preserve);
@@ -325,6 +348,9 @@ public class JsonInputHandler implements DicomInputHandler {
         sopInstanceUid = null;
         sopInstanceUidReady = false;
 
+        patientId = null;
+        patientIdReady = false;
+
         jsonGenerator.writeStartObject();
     }
 
@@ -334,5 +360,7 @@ public class JsonInputHandler implements DicomInputHandler {
         jsonGenerator.writeEnd();
 
         sopInstanceUidReady = true;
+
+        patientIdReady = true;
     }
 }
